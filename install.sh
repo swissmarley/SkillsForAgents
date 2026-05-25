@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-c_reset='\033[0m'; c_bold='\033[1m'; c_dim='\033[2m'
+c_reset='\033[0m'; c_bold='\033[1m'
 c_green='\033[32m'; c_yellow='\033[33m'; c_red='\033[31m'; c_cyan='\033[36m'
 log()  { printf "${c_cyan}▸${c_reset} %s\n" "$*"; }
 ok()   { printf "${c_green}✓${c_reset} %s\n" "$*"; }
@@ -75,7 +75,11 @@ ask()  {
 
 # --- 0. Resolve repo root: local checkout or fetch via curl/git ----------------
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+SCRIPT_DIR=""
+if _d="$(dirname -- "${BASH_SOURCE[0]:-$0}" 2>/dev/null)" && _abs="$(cd -- "$_d" 2>/dev/null && pwd)"; then
+  SCRIPT_DIR="$_abs"
+fi
+unset _d _abs
 if [[ -n "${SCRIPT_DIR:-}" && -f "$SCRIPT_DIR/skills.json" ]]; then
   REPO_ROOT="$SCRIPT_DIR"
   log "Using local checkout at $REPO_ROOT"
