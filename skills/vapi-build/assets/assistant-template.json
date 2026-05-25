@@ -1,0 +1,26 @@
+{
+  "name": "<AGENT_NAME>",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.4,
+    "messages": [
+      { "role": "system", "content": "<SYSTEM_PROMPT>" }
+    ],
+    "tools": []
+  },
+  "voice": {
+    "provider": "11labs",
+    "voiceId": "rachel"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "en"
+  },
+  "firstMessage": "<FIRST_MESSAGE>",
+  "endCallFunctionEnabled": true,
+  "recordingEnabled": true,
+  "silenceTimeoutSeconds": 30,
+  "responseDelaySeconds": 0.4
+}

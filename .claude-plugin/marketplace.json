@@ -1,0 +1,42 @@
+{
+  "name": "SkillsForAgents",
+  "description": "A growing collection of agent skills (Claude Code, Codex, OpenCode, Hermes). Drop-in productivity, research, and voice-agent tooling.",
+  "owner": {
+    "name": "swissmarley",
+    "url": "https://github.com/swissmarley/SkillsForAgents"
+  },
+  "plugins": [
+    {
+      "name": "session-journal",
+      "source": "./skills/session-journal",
+      "description": "Record and archive work sessions into an Obsidian-style brain/wiki. Triggers: 'Hey Claude, let's go!' / 'I'm done for today'.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "tags": ["obsidian", "journaling", "productivity"]
+    },
+    {
+      "name": "wiki-save",
+      "source": "./skills/wiki-save",
+      "description": "Save content into an Obsidian-style brain/wiki on request. Triggers: 'save this', 'save to wiki', '/save'.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "tags": ["obsidian", "notes"]
+    },
+    {
+      "name": "magic-content",
+      "source": "./skills/magic-content",
+      "description": "Interactive research pipeline: discover YouTube/Web/PDF sources, generate artifacts with NotebookLM, review, ingest into your wiki.",
+      "version": "1.0.0",
+      "category": "research",
+      "tags": ["research", "notebooklm", "content"]
+    },
+    {
+      "name": "vapi-build",
+      "source": "./skills/vapi-build",
+      "description": "End-to-end builder for production Vapi voice agents with custom n8n tools.",
+      "version": "1.0.0",
+      "category": "voice",
+      "tags": ["voice", "vapi", "n8n", "agents"]
+    }
+  ]
+}

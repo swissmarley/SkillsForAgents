@@ -1,0 +1,82 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate skills.json
+        run: |
+          python3 - <<'PY'
+          import json, os, sys, re
+          data = json.load(open("skills.json"))
+          errors = []
+          seen = set()
+          for s in data.get("skills", []):
+              name = s.get("name", "")
+              if not re.match(r"^[a-z][a-z0-9-]*$", name):
+                  errors.append(f"bad name: {name!r}")
+              if name in seen:
+                  errors.append(f"duplicate name: {name}")
+              seen.add(name)
+              folder = f"skills/{name}"
+              if not os.path.isdir(folder):
+                  errors.append(f"{name}: folder {folder} missing")
+              if not os.path.isfile(f"{folder}/SKILL.md"):
+                  errors.append(f"{name}: SKILL.md missing in {folder}")
+              for cmd in s.get("commands", []) or []:
+                  cfile = f"{folder}/{cmd['file']}"
+                  if not os.path.isfile(cfile):
+                      errors.append(f"{name}: command file {cfile} missing")
+              req = (s.get("requirements") or {}).get("python")
+              if req and not os.path.isfile(f"{folder}/{req}"):
+                  errors.append(f"{name}: requirements file {folder}/{req} missing")
+          if errors:
+              for e in errors: print("✗", e)
+              sys.exit(1)
+          print(f"✓ {len(seen)} skills validated")
+          PY
+
+      - name: Validate marketplace.json
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          mp = json.load(open(".claude-plugin/marketplace.json"))
+          sk = json.load(open("skills.json"))
+          names_mp = {p["name"] for p in mp["plugins"]}
+          names_sk = {s["name"] for s in sk["skills"]}
+          missing = names_sk - names_mp
+          extra = names_mp - names_sk
+          if missing or extra:
+              if missing: print("✗ in skills.json but not marketplace.json:", missing)
+              if extra: print("✗ in marketplace.json but not skills.json:", extra)
+              sys.exit(1)
+          print("✓ marketplace.json in sync with skills.json")
+          PY
+
+      - name: Shellcheck installers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y shellcheck
+          shellcheck install.sh installers/*.sh
+
+      - name: Smoke-test installer (copy mode, sandbox)
+        run: |
+          SANDBOX=$(mktemp -d)
+          CLAUDE_HOME="$SANDBOX/.claude" ./install.sh \
+            --agent claude --mode copy --brain "$SANDBOX/brain" --no-venv -y
+          test -f "$SANDBOX/.claude/skills/session-journal/SKILL.md"
+          test -f "$SANDBOX/.claude/commands/save.md"
+          grep -q "BEGIN SkillsForAgents:auto-managed" "$SANDBOX/.claude/CLAUDE.md"
+          echo "✓ smoke test passed"

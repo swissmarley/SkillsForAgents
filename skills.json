@@ -1,0 +1,85 @@
+{
+  "$schema": "./docs/skills.schema.json",
+  "version": 1,
+  "_doc": "Single source of truth for the installer, the Claude Code marketplace, and CI. To add a new skill: drop a folder under skills/ and add an entry below.",
+
+  "shared_env": [
+    {
+      "name": "OBSIDIAN_BRAIN_PATH",
+      "description": "Path to your Obsidian-style brain/wiki root. Used by skills that read/write notes.",
+      "default": "~/Documents/Obsidian/Brain",
+      "optional": true,
+      "used_by": ["session-journal", "wiki-save", "magic-content"]
+    }
+  ],
+
+  "skills": [
+    {
+      "name": "session-journal",
+      "version": "1.0.0",
+      "description": "Record and archive work sessions into an Obsidian-style brain/wiki.",
+      "tags": ["obsidian", "journaling", "productivity"],
+      "triggers": [
+        { "phrase": "Hey Claude, let's go!", "kind": "activation" },
+        { "phrase": "I'm done for today", "kind": "closing" }
+      ],
+      "commands": [],
+      "requirements": {},
+      "env": ["OBSIDIAN_BRAIN_PATH"]
+    },
+    {
+      "name": "wiki-save",
+      "version": "1.0.0",
+      "description": "Save content/ideas into an Obsidian-style brain/wiki on request.",
+      "tags": ["obsidian", "notes", "productivity"],
+      "triggers": [
+        { "phrase": "save this" },
+        { "phrase": "save to wiki" },
+        { "phrase": "archive this" },
+        { "phrase": "add to wiki" },
+        { "phrase": "/save" }
+      ],
+      "commands": [
+        { "file": "commands/save.md", "slash": "save" }
+      ],
+      "requirements": {},
+      "env": ["OBSIDIAN_BRAIN_PATH"]
+    },
+    {
+      "name": "magic-content",
+      "version": "1.0.0",
+      "description": "Interactive research pipeline (NotebookLM → wiki).",
+      "tags": ["research", "notebooklm", "content"],
+      "triggers": [
+        { "phrase": "/magic-content" },
+        { "phrase": "MAGIC" }
+      ],
+      "commands": [
+        { "file": "commands/magic-content.md", "slash": "magic-content" }
+      ],
+      "requirements": { "python": "requirements.txt" },
+      "env": ["OBSIDIAN_BRAIN_PATH"],
+      "external_tools": [
+        { "name": "notebooklm", "description": "NotebookLM CLI (login required before first run)." }
+      ]
+    },
+    {
+      "name": "vapi-build",
+      "version": "1.0.0",
+      "description": "Interactive end-to-end builder for production Vapi voice agents with n8n tools.",
+      "tags": ["voice", "vapi", "n8n", "agents"],
+      "triggers": [
+        { "phrase": "/vapi-build" },
+        { "phrase": "VAPI GO" },
+        { "phrase": "vapi go" }
+      ],
+      "commands": [],
+      "requirements": {},
+      "env": [],
+      "external_tools": [
+        { "name": "vapi", "description": "Vapi CLI (login required before first run)." },
+        { "name": "n8n", "description": "n8n instance (optional, for custom tool workflows)." }
+      ]
+    }
+  ]
+}

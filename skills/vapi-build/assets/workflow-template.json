@@ -1,0 +1,70 @@
+{
+  "name": "<TOOL_NAME>",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "<UUID>",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "<UUID>"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body ?? raw;\nconst vapiArgs = body?.message?.toolCallList?.[0]?.function?.arguments\n  ?? body?.toolCallList?.[0]?.function?.arguments\n  ?? {};\nconst args = Object.keys(vapiArgs).length > 0 ? vapiArgs : body;\n// REPLACE: required-field guards\n// if (!args.requiredParam) throw new Error('requiredParam is required');\n// REPLACE: cleaned output object\nreturn [{ json: { ...args } }];"
+      },
+      "id": "n2",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 0]
+    },
+    {
+      "parameters": {
+        "_comment": "REPLACE this entire node with the real Gmail / Calendar / HTTP / DB action node — reference $json.<field> from Validate Input."
+      },
+      "id": "n3",
+      "name": "Action Node",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [600, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawW = $('Webhook').first().json;\nconst bW = rawW.body ?? rawW;\nconst toolCallId = bW?.message?.toolCallList?.[0]?.id\n  ?? bW?.toolCallList?.[0]?.id\n  ?? bW?.toolCallId\n  ?? 'unknown';\nconst result = $input.first().json;\nconst data = { success: true, message: 'Completed', ...result };\nreturn [{ json: { results: [{ toolCallId, result: JSON.stringify(data) }] } }];"
+      },
+      "id": "n4",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "n5",
+      "name": "Respond to Vapi",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {
+    "Webhook":         { "main": [[{ "node": "Validate Input",  "type": "main", "index": 0 }]] },
+    "Validate Input":  { "main": [[{ "node": "Action Node",     "type": "main", "index": 0 }]] },
+    "Action Node":     { "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]] },
+    "Format Response": { "main": [[{ "node": "Respond to Vapi", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}
