@@ -23,6 +23,7 @@ Or, in Claude Code, browse this repo as a plugin marketplace:
 | **session-journal** | Records work sessions into an Obsidian-style brain/wiki and archives them on demand. | "Hey Claude, let's go!" → "I'm done for today" |
 | **wiki-save** | Saves the current idea/snippet into your wiki under concepts / entities / synthesis / reflections. | "save this", "save to wiki", `/save` |
 | **magic-content** | Interactive research pipeline: YouTube/Web/PDF discovery → NotebookLM artifacts → wiki ingest. | `/magic-content`, `MAGIC <topic>` |
+| **magic-web** | Immersive scroll-driven hero website factory: topic → 4 prompts → 2 frames (Nano Banana 2/Pro) → 8 s 1080p video (Veo 3.1 Fast/Lite) → 1920×1004 frames → Antigravity website. 100% Gemini API; choose AI Studio key or Vertex AI; cost preview up front. | `/magic-web`, "POWER HERO" |
 | **vapi-build** | End-to-end builder for production Vapi voice agents with custom n8n tools. | `/vapi-build`, "VAPI GO" |
 
 ---
@@ -77,6 +78,9 @@ Examples:
 
 # Clean uninstall
 ./install.sh --agent claude --uninstall
+
+# Just the immersive-website builder
+./install.sh --agent claude --only magic-web
 ```
 
 ---
@@ -88,6 +92,7 @@ Three skills (`session-journal`, `wiki-save`, `magic-content`) read/write into a
 Skills that need external CLIs:
 
 - **magic-content** → [`notebooklm` CLI](https://github.com/) (run `notebooklm login` once)
+- **magic-web** → `ffmpeg` (e.g. `brew install ffmpeg`), the Antigravity CLI, and `pip install google-genai`. Set **either** `GEMINI_API_KEY` (Google AI Studio) **or** `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION` + `GOOGLE_APPLICATION_CREDENTIALS` (Vertex AI). The skill asks you to pick one auth path on first run and remembers it.
 - **vapi-build** → [`vapi` CLI](https://docs.vapi.ai/cli) (run `vapi login` once) and optionally an n8n instance
 
 ---
