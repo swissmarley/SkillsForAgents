@@ -1,6 +1,6 @@
 ---
 name: magic-web
-description: Interactive end-to-end builder for immersive scroll-driven hero websites. Drives the user through a guided numbered menu that takes a topic description and produces a production-ready website where scroll position scrubs through ~240 AI-generated video frames on a sticky 1920×1005 canvas. Orchestrates a 6-stage pipeline using only the Google Gemini API — prompt architecture, dual image generation (Nano Banana 2 or Nano Banana Pro, user choice), 1080p video generation (Veo 3.1 Lite or Veo 3.1 Fast, user choice), ffmpeg crop (75px bottom to strip the Veo watermark) + normalize, frame extraction at 30 fps, and Antigravity-CLI website generation. Auth supports either a Gemini API key from Google AI Studio or Vertex AI on Google Cloud. ALWAYS invoke this skill when the user types `/magic-web`, says "POWER HERO" / "power hero" (case-insensitive, even mid-sentence), or asks anything about building, generating, or scaffolding an immersive scrolling hero website, scroll-scrubbed video website, frame-by-frame scroll animation site, or a hero canvas that plays a video as the user scrolls — even when they don't mention "Gemini", "Veo", "Nano Banana", or "Antigravity" explicitly. This is the only correct path for assembling immersive scrolling websites from scratch in this environment.
+description: Interactive end-to-end builder for immersive scroll-driven hero websites. Drives the user through a guided numbered menu that takes a topic description and produces a production-ready website where scroll position scrubs through ~240 AI-generated video frames on a sticky 1920×1004 canvas. Orchestrates a 6-stage pipeline using only the Google Gemini API — prompt architecture, dual image generation (Nano Banana 2 or Nano Banana Pro, user choice), 1080p video generation (Veo 3.1 Lite or Veo 3.1 Fast, user choice), ffmpeg crop (76px bottom to strip the Veo watermark) + normalize, frame extraction at 30 fps, and Antigravity-CLI website generation. Auth supports either a Gemini API key from Google AI Studio or Vertex AI on Google Cloud. ALWAYS invoke this skill when the user types `/magic-web`, says "POWER HERO" / "power hero" (case-insensitive, even mid-sentence), or asks anything about building, generating, or scaffolding an immersive scrolling hero website, scroll-scrubbed video website, frame-by-frame scroll animation site, or a hero canvas that plays a video as the user scrolls — even when they don't mention "Gemini", "Veo", "Nano Banana", or "Antigravity" explicitly. This is the only correct path for assembling immersive scrolling websites from scratch in this environment.
 ---
 
 # Magic Web — Immersive Scrolling Website Factory
@@ -88,7 +88,7 @@ Carry these through the whole run. Surface them at Stage 0 and let the user over
 | `IMAGE_MODEL` | `nano-banana-2` | One of `nano-banana-2` or `nano-banana-pro` (see model table). |
 | `VIDEO_MODEL` | `veo-3.1-fast` | One of `veo-3.1-lite` or `veo-3.1-fast`. Always 1080p. |
 | `VIDEO_RESOLUTION` | `1920x1080` | Hard-locked to 1080p — the crop math depends on it. |
-| `CROP_BOTTOM_PX` | `75` | Pixels cropped from the bottom of the rendered video to strip the Veo watermark. 1920×1080 → **1920×1005**. |
+| `CROP_BOTTOM_PX` | `76` | Pixels cropped from the bottom of the rendered video to strip the Veo watermark. 1920×1080 → **1920×1004**. |
 | `VIDEO_DURATION` | `8` | Target video duration in seconds. |
 | `FRAME_RATE` | `30` | Frames per second extracted from the video. |
 | `TOTAL_FRAMES` | `240` | Derived: `VIDEO_DURATION × FRAME_RATE`. Recompute if either changes. |
@@ -96,7 +96,7 @@ Carry these through the whole run. Surface them at Stage 0 and let the user over
 | `WORK_DIR` | `/tmp/magic-web/<timestamp>` | Per-run scratch dir for prompts, frames, intermediate video. |
 | `TOPIC` | (required) | Natural-language scene description from the user. |
 
-`TOTAL_FRAMES` is the load-bearing invariant for Stage 5 — if the user changes `VIDEO_DURATION` or `FRAME_RATE`, recompute and re-state it before continuing. **Do not** let the user override `VIDEO_RESOLUTION` in this version; the crop math (75 px → 1920×1005) assumes 1080p input.
+`TOTAL_FRAMES` is the load-bearing invariant for Stage 5 — if the user changes `VIDEO_DURATION` or `FRAME_RATE`, recompute and re-state it before continuing. **Do not** let the user override `VIDEO_RESOLUTION` in this version; the crop math (76 px → 1920×1004) assumes 1080p input.
 
 ## Model catalog (Gemini API)
 
@@ -306,31 +306,24 @@ Loop until the user picks option 1.
 
 Log: `[STAGE 3/6] ✓ Video approved (<VIDEO_MODEL>, 1080p, <duration>s, <N> iterations) — output: hero_animation.mp4`
 
-### Stage 4 — Video Pre-Processing (Crop + Normalize)
+### Stage 4 — Video Pre-Processing (Crop + Normalize, single pass)
 
-Two ffmpeg passes, both quiet (`-loglevel error`), both abort the run on non-zero exit. Always echo the exact command so the user can re-run it manually if needed.
+Crop and fps-normalize in **one** ffmpeg invocation. Chaining `crop` and `fps` in the same filtergraph avoids a second encode pass — faster, smaller scratch dir, and no generation loss from re-encoding the intermediate.
 
-**Step 1 — Crop bottom `CROP_BOTTOM_PX` (75 by default) pixels to strip the Veo watermark.** 1920×1080 → **1920×1005**:
+Quiet output (`-loglevel error`), abort on non-zero exit. Always echo the exact command so the user can re-run it manually if needed.
 
 ```bash
 ffmpeg -y -loglevel error -i "$WORK_DIR/hero_animation.mp4" \
-  -vf "crop=iw:ih-$CROP_BOTTOM_PX:0:0" \
+  -vf "crop=iw:ih-$CROP_BOTTOM_PX:0:0,fps=$FRAME_RATE" \
   -c:v libx264 -pix_fmt yuv420p -crf 18 \
-  "$WORK_DIR/hero_cropped.mp4"
-```
-
-Verify with `ffprobe` that the cropped video is **1920×1005**. If it isn't, abort — something upstream rendered at a different resolution and the rest of the pipeline will misbehave.
-
-**Step 2 — Normalize to exactly `FRAME_RATE` fps:**
-```bash
-ffmpeg -y -loglevel error -i "$WORK_DIR/hero_cropped.mp4" \
-  -r "$FRAME_RATE" \
   "$WORK_DIR/hero_normalized.mp4"
 ```
 
-Verify the normalized file is `VIDEO_DURATION` seconds × `FRAME_RATE` fps = `TOTAL_FRAMES` frames using `ffprobe`. If the frame count is off by more than ±2, warn the user — the video model may have produced a slightly different duration and Stage 5 will need extra care.
+**Why `CROP_BOTTOM_PX` defaults to 76, not 75:** `libx264` with `yuv420p` requires both dimensions to be even. 1080 − 75 = 1005 (odd) would fail with `width or height not divisible by 2`. 1080 − 76 = **1004** (even) is safe. If a user overrides `CROP_BOTTOM_PX`, force it to the nearest even value and warn them.
 
-Log: `[STAGE 4/6] ✓ Cropped (1920×1005) + normalized — output: hero_normalized.mp4`
+Verify with `ffprobe` that the output is **1920×1004** and `VIDEO_DURATION` seconds × `FRAME_RATE` fps ≈ `TOTAL_FRAMES` frames. If resolution is wrong, abort — something upstream rendered at a different size and the rest of the pipeline will misbehave. If the frame count is off by more than ±2, warn the user — the video model may have produced a slightly different duration and Stage 5 will need extra care.
+
+Log: `[STAGE 4/6] ✓ Cropped (1920×1004) + normalized to <FRAME_RATE>fps — output: hero_normalized.mp4`
 
 ### Stage 5 — Frame Extraction (all frames at 30 fps → PNG)
 
@@ -345,29 +338,43 @@ ffmpeg -y -loglevel error -i "$WORK_DIR/hero_normalized.mp4" \
 
 **Validate:**
 - Roughly `TOTAL_FRAMES` files exist in `$WORK_DIR/frames/` (tolerate ±2 due to encoder rounding).
-- Each file is **1920×1005** (spot-check the first, middle, last frame with `ffprobe` or `identify`).
+- Each file is **1920×1004** (spot-check the first, middle, last frame with `ffprobe` or `identify`).
 - Naming runs `frame_0001.png` through `frame_<N>.png`.
 - No zero-byte files.
 
 If the count is far off, abort and ask the user whether to re-normalize or regenerate.
 
-Log: `[STAGE 5/6] ✓ Extracted N frames at <FRAME_RATE> fps — output: frames/ (1920×1005 PNGs)`
+Log: `[STAGE 5/6] ✓ Extracted N frames at <FRAME_RATE> fps — output: frames/ (1920×1004 PNGs)`
 
 ### Stage 6 — Website Generation (Antigravity CLI)
 
 The Antigravity CLI receives the full context bundle and produces a self-contained website.
 
+**Step 0 — Materialize `website_prompt.txt` from `prompts.json`.** The CLI consumes it via `cat`, so it has to actually exist on disk before invocation:
+
+```bash
+python3 -c "import json; print(json.load(open('$WORK_DIR/prompts.json'))['website'])" \
+  > "$WORK_DIR/website_prompt.txt"
+```
+
 **Context bundle:**
-- `$WORK_DIR/frames/` — the sequential 1920×1005 PNG frames
-- `$WORK_DIR/prompts.json` → the `website` field as the design brief (also write it to `website_prompt.txt`)
-- `$WORK_DIR/first_frame.png` — fallback hero image for `prefers-reduced-motion`
-- `$WORK_DIR/hero_animation.mp4` — the full video, for optional autoplay sections
+- `$WORK_DIR/frames/` — the sequential 1920×1004 PNG frames, named `frame_0001.png` … `frame_<TOTAL_FRAMES, zero-padded to 4 digits>.png` (ffmpeg's `%04d` output starts at **1**, not 0).
+- `$WORK_DIR/website_prompt.txt` — the design brief extracted above.
+- `$WORK_DIR/first_frame.png` — fallback hero image for `prefers-reduced-motion`.
+- `$WORK_DIR/hero_animation.mp4` — the full video, for optional autoplay sections.
 
 **Instructions to embed in the Antigravity prompt:**
 
 1. **Hero section — scroll-driven frame playback.**
-   - Sticky canvas, `100vw × 100vh`, internal draw buffer sized to the actual frame dimensions (1920×1005) and CSS-fitted with `object-fit: cover`.
-   - Map scroll position to frame index: `frameIndex = Math.floor(scrollProgress * (TOTAL_FRAMES - 1))`.
+   - Sticky canvas, `100vw × 100vh`, internal draw buffer sized to the actual frame dimensions (1920×1004) and CSS-fitted with `object-fit: cover`.
+   - Map scroll position to frame index: `frameIndex = Math.floor(scrollProgress * (TOTAL_FRAMES - 1))` → range `[0, TOTAL_FRAMES - 1]`.
+   - **Filename mapping (critical):** ffmpeg writes 1-based filenames (`frame_0001.png` … `frame_0240.png`), but `frameIndex` is 0-based. **Always add 1** when constructing the URL:
+     ```js
+     // TOTAL_FRAMES = 240 → frameIndex ∈ [0, 239] → filename ∈ frame_0001.png..frame_0240.png
+     const paddedIndex = String(frameIndex + 1).padStart(4, '0');
+     const frameUrl = `frames/frame_${paddedIndex}.png`;
+     ```
+     Skipping the `+ 1` will 404 on the first frame and miss the last frame entirely. Repeat this rule verbatim in the Antigravity prompt so the generated JS gets it right.
    - Preload all frames into an `Image[]` array on page load. Show a progress bar during preload; only enable scroll playback once preload completes.
    - For long pages, lazy-load in batches of 30 if memory is a concern.
    - Update the canvas on every `scroll` event (use `requestAnimationFrame` to coalesce).
@@ -446,7 +453,7 @@ Print a compact one-screen explanation of what each stage does and roughly what 
 - **Stage 1** — retry with a simplified prompt if the response is empty or malformed JSON.
 - **Stage 2** — retry image generation once per failed frame; abort the run if both retries fail. On 429/quota errors, surface the exact rate-limit message and offer to switch to the other auth path (studio ↔ vertex).
 - **Stage 3** — poll for up to 10 minutes, then surface a clear timeout error with the operation name and a resume hint. On quota errors, same fallback as Stage 2.
-- **Stages 4–5** — abort on ffmpeg non-zero exit; log the exact command and stderr. Re-verify the 1920×1005 dimension after the crop.
+- **Stages 4–5** — abort on ffmpeg non-zero exit; log the exact command and stderr. Re-verify the 1920×1004 dimension after the crop.
 - **Stage 6** — validate `TOTAL_FRAMES` count and that `frames/`, `first_frame.png`, and `website_prompt.txt` all exist before invoking the CLI. If Antigravity itself fails, keep the frames + prompt available so the user can hand them to another generator.
 
 ## House style for everything you print

@@ -66,7 +66,7 @@
     {
       "name": "magic-web",
       "version": "1.1.0",
-      "description": "Interactive builder for immersive scroll-driven hero websites via the Gemini API: topic → 4 prompts → 2 frames (Nano Banana 2 or Pro) → 8s 1080p video (Veo 3.1 Fast or Lite) → cropped to 1920×1005 → all frames at 30 fps → Antigravity-CLI website.",
+      "description": "Interactive builder for immersive scroll-driven hero websites via the Gemini API: topic → 4 prompts → 2 frames (Nano Banana 2 or Pro) → 8s 1080p video (Veo 3.1 Fast or Lite) → cropped to 1920×1004 → all frames at 30 fps → Antigravity-CLI website.",
       "tags": ["web", "video", "gemini", "nano-banana", "veo", "antigravity", "scroll-animation"],
       "triggers": [
         { "phrase": "/magic-web" },
@@ -85,7 +85,7 @@
         "GOOGLE_APPLICATION_CREDENTIALS"
       ],
       "external_tools": [
-        { "name": "ffmpeg", "description": "Video crop (75px bottom → 1920×1005), fps normalize, and frame extraction (Stages 4–5)." },
+        { "name": "ffmpeg", "description": "Video crop (76px bottom → 1920×1004), fps normalize, and frame extraction (Stages 4–5)." },
         { "name": "antigravity", "description": "Antigravity CLI — generates the final website (Stage 6)." },
         { "name": "google-genai", "description": "Python SDK (`pip install google-genai`) used for both image (Nano Banana 2 / Pro) and video (Veo 3.1 Fast / Lite) calls. Works against either Google AI Studio (GEMINI_API_KEY) or Vertex AI (GOOGLE_CLOUD_PROJECT + ADC)." }
       ]

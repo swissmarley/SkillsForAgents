@@ -33,7 +33,7 @@
     {
       "name": "magic-web",
       "source": "./skills/magic-web",
-      "description": "Interactive builder for immersive scroll-driven hero websites — 100% Gemini API. Topic → 4 prompts → 2 frames (Nano Banana 2 or Pro) → 8s 1080p video (Veo 3.1 Fast or Lite) → cropped to 1920×1005 → all 30fps frames → Antigravity-CLI website. Choose AI Studio key or Vertex AI auth, choose model tier, see cost up front.",
+      "description": "Interactive builder for immersive scroll-driven hero websites — 100% Gemini API. Topic → 4 prompts → 2 frames (Nano Banana 2 or Pro) → 8s 1080p video (Veo 3.1 Fast or Lite) → cropped to 1920×1004 → all 30fps frames → Antigravity-CLI website. Choose AI Studio key or Vertex AI auth, choose model tier, see cost up front.",
       "version": "1.1.0",
       "category": "web",
       "tags": ["web", "video", "gemini", "nano-banana", "veo", "antigravity", "scroll-animation"]
